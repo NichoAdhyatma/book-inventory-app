@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data x-init="$store.darkMode.init()">
+<html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Book Management') }}</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +19,7 @@
                class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
             
             <!-- Logo -->
-            <div class="flex items-center justify-between h-16 px-6 bg-primary-600">
+            <div class="flex items-center justify-between h-16 px-6 bg-blue-600">
                 <a href="{{ route('home') }}" class="flex items-center space-x-2">
                     <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.669 0-3.218.51-4.5 1.385V4.804z"/>
@@ -63,7 +62,7 @@
                 </div>
 
                 <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                    <a href="{{ route('profile') }}" 
+                    <a href="{{ route('profile.index') }}" 
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg {{ request()->routeIs('profile') ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -88,7 +87,7 @@
             <div class="absolute bottom-0 w-full p-4 bg-gray-50 dark:bg-gray-900">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0">
-                        <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
                             <span class="text-white font-semibold">
                                 {{ substr(auth()->user()->name, 0, 1) }}
                             </span>

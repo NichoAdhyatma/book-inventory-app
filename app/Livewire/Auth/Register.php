@@ -3,30 +3,32 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
-use App\Mail\VerificationEmail;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Livewire\Component;
 use Livewire\Attributes\Rule;
+use Livewire\Component;
 
 class Register extends Component
 {
-    #[Rule('required|string|max:255')]
+    #[Rule('required|string|min:3')]
     public $name = '';
 
     #[Rule('required|email|unique:users,email')]
     public $email = '';
 
-    #[Rule('required|min:8|confirmed')]
+    #[Rule('required|string|min:6')]
     public $password = '';
 
+    #[Rule('required|same:password')]
     public $password_confirmation = '';
+
+    #[Rule('accepted')]
+    public $terms = false;
 
     public function register()
     {
-        try {
-            $this->validate();
+        $this->validate();
 
+        try {
             $verification_token = Str::random(60);
 
             $user = User::create([
@@ -36,12 +38,12 @@ class Register extends Component
                 'verification_token' => $verification_token,
             ]);
 
-            Mail::to($user->email)->send(new VerificationEmail($user, $verification_token));
+            $user->sendEmailVerificationNotification();
 
-            session()->flash('success', 'Registration successful! Please check your email to verify your account.');
+            session()->flash('success', 'Registration successful! Check your email to verify.');
             return redirect()->route('login');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Registration failed. Please try again.');
+        } catch (\Exception $e) {      
+            session()->flash('error', 'Registration failed. Please try again. ' . $e->getMessage());
         }
     }
 

@@ -18,20 +18,34 @@ class Login extends Component
     public $remember = false;
 
     public function login()
-    {
-        try {
-            $this->validate();
+{
+    try {
+        $this->validate();
 
-            if (Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
-                session()->regenerate();
-                return redirect()->intended('/home');
-            }
+        $user = \App\Models\User::where('email', $this->email)->first();
 
-            $this->addError('email', 'The provided credentials do not match our records.');
-        } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred during login. Please try again.');
+        if (!$user) {
+            $this->addError('email', 'Email is not registered.');
+            return;
         }
+
+        if (!$user->hasVerifiedEmail()) {
+            $this->addError('email', 'Email has not been verified.');
+            return;
+        }
+
+
+        if (Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+            session()->regenerate();
+            return redirect()->intended('/home');
+        }
+
+        $this->addError('email', 'The provided credentials do not match our records.');
+    } catch (\Exception $e) {
+        session()->flash('error', 'An error occurred during login. Please try again.');
     }
+}
+
 
     public function render()
     {

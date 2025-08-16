@@ -8,20 +8,26 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Rule;
+use Livewire\Attributes\Url;
 
 class BookManagement extends Component
 {
     use WithFileUploads, WithPagination;
 
+    // Modal & Form Properties
     public $book_id;
+    public $show_modal = false;
+    public $editing = false;
+    public $viewing = false;
     
+    // Form Fields
     #[Rule('required|string|max:255')]
     public $title = '';
     
     #[Rule('required|string|max:255')]
     public $author = '';
     
-    #[Rule('required|string')]
+    #[Rule('required|string|min:10')]
     public $description = '';
     
     #[Rule('required|integer|min:1|max:5')]
@@ -30,9 +36,19 @@ class BookManagement extends Component
     #[Rule('nullable|image|max:2048')]
     public $thumbnail;
     
-    public $show_modal = false;
-    public $editing = false;
+    public $existing_thumbnail;
+    
+    // Search & Filter
+    #[Url(history: true)]
     public $search = '';
+    
+    #[Url(history: true)]
+    public $sort_by = 'created_at';
+    
+    #[Url(history: true)]
+    public $sort_direction = 'desc';
+    
+    public $per_page = 12;
 
     public function mount()
     {
@@ -41,27 +57,36 @@ class BookManagement extends Component
 
     public function resetForm()
     {
-        $this->book_id = null;
-        $this->title = '';
-        $this->author = '';
-        $this->description = '';
-        $this->rating = 3;
-        $this->thumbnail = null;
-        $this->editing = false;
+        $this->reset([
+            'book_id',
+            'title',
+            'author', 
+            'description',
+            'rating',
+            'thumbnail',
+            'existing_thumbnail',
+            'editing',
+            'viewing'
+        ]);
+        $this->resetValidation();
     }
 
-    public function openModal($book_id = null)
+    public function openModal($book_id = null, $view_only = false)
     {
+
+        
         $this->resetForm();
+        $this->viewing = $view_only;
         
         if ($book_id) {
-            $book = Book::findOrFail($book_id);
+            $book = Book::where('user_id', auth()->id())->findOrFail($book_id);
             $this->book_id = $book->id;
             $this->title = $book->title;
             $this->author = $book->author;
             $this->description = $book->description;
             $this->rating = $book->rating;
-            $this->editing = true;
+            $this->existing_thumbnail = $book->thumbnail;
+            $this->editing = !$view_only;
         }
         
         $this->show_modal = true;
@@ -71,11 +96,12 @@ class BookManagement extends Component
     {
         $this->show_modal = false;
         $this->resetForm();
-        $this->resetValidation();
     }
 
     public function save()
     {
+        if ($this->viewing) return;
+        
         try {
             $this->validate();
 
@@ -84,7 +110,6 @@ class BookManagement extends Component
                 'author' => $this->author,
                 'description' => $this->description,
                 'rating' => $this->rating,
-                'user_id' => auth()->id(),
             ];
 
             if ($this->thumbnail) {
@@ -92,8 +117,8 @@ class BookManagement extends Component
                 $data['thumbnail'] = $thumbnail_path;
             }
 
-            if ($this->editing) {
-                $book = Book::findOrFail($this->book_id);
+            if ($this->editing && $this->book_id) {
+                $book = Book::where('user_id', auth()->id())->findOrFail($this->book_id);
                 
                 if ($this->thumbnail && $book->thumbnail) {
                     Storage::disk('public')->delete($book->thumbnail);
@@ -102,6 +127,7 @@ class BookManagement extends Component
                 $book->update($data);
                 session()->flash('success', 'Book updated successfully!');
             } else {
+                $data['user_id'] = auth()->id();
                 Book::create($data);
                 session()->flash('success', 'Book added successfully!');
             }
@@ -128,18 +154,35 @@ class BookManagement extends Component
         }
     }
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sort_by === $field) {
+            $this->sort_direction = $this->sort_direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sort_by = $field;
+            $this->sort_direction = 'asc';
+        }
+    }
+
     public function render()
     {
         $books = Book::where('user_id', auth()->id())
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'ILIKE', '%' . $this->search . '%')
-                      ->orWhere('author', 'ILIKE', '%' . $this->search . '%');
+                      ->orWhere('author', 'ILIKE', '%' . $this->search . '%')
+                      ->orWhere('description', 'ILIKE', '%' . $this->search . '%');
                 });
             })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->orderBy($this->sort_by, $this->sort_direction)
+            ->paginate($this->per_page);
 
-        return view('livewire.book-management', compact('books'));
+        return view('livewire.book-management', compact('books'))
+            ->layout('layouts.app');
     }
 }
